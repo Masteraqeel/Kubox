@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubox Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-in">
+    <a class="logo" href="#home" aria-label="Kubox home"><span class="logo-k">K</span>UBOX</a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#home" data-r="home">Home</a>
+      <a href="#games" data-r="games">Games</a>
+      <a href="#catalog" data-r="catalog">Catalog</a>
+      <a href="#groups" data-r="groups">Groups</a>
+      <a href="#forum" data-r="forum">Forum</a>
+      <a href="#trade" data-r="trade">Trade</a>
+    </nav>
+    <div class="acct">
+      <span class="bits" title="Bits, the Kubox currency"><i class="coin"></i><b id="bits">0</b></span>
+      <a href="#profile" id="me-link">Founder</a>
+    </div>
+  </div>
+</header>
+<div class="strip"><div class="wrap">Prototype build. All players, prices and posts are sample data. Nothing is sent to a server.</div></div>
+<main class="wrap" id="main"></main>
+<footer class="wrap foot">Kubox prototype 0.1 · Bits cannot be cashed out · 18+ only</footer>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="var s=document.createElement('script');s.src='vendor/three.min.js';document.head.appendChild(s)"></script>
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
