@@ -13,7 +13,7 @@ export class HttpError extends Error {
 export type User = { id: number; username: string; role: string; colors: string };
 export type Env = { Variables: { user: User | null } };
 export type Ctx = Context<Env>;
-export type Options = { db: DB; secureCookies: boolean; rateLimit: boolean; staticRoot?: string };
+export type Options = { db: DB; secureCookies: boolean; rateLimit: boolean; staticRoot?: string; places?: () => Record<string, number> };
 
 export const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 export const newToken = () => randomBytes(32).toString('base64url');

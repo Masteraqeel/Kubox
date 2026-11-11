@@ -34,7 +34,7 @@ window.KBLive = {
     const reportForm = (kind, id) => reporting && reporting.kind === kind && reporting.id === id ? `<form class="form" data-form="report" style="margin-top:8px"><label>Why are you reporting this?<input name="reason" required minlength="3" maxlength="300"></label><div class="tools"><button class="btn sm warn" type="submit">Send report</button><button class="btn sm plain" type="button" data-act="report">Cancel</button></div></form>` : '';
 
     function account() {
-      document.getElementById('strip').textContent = 'Live: accounts, the forum and groups are real. The catalog, trading and games still use sample data.';
+      document.getElementById('strip').textContent = 'Live: accounts, the forum, groups and multiplayer games are real. The catalog and trading still use sample data.';
       document.getElementById('acct').innerHTML = me
         ? `<span class="bits" title="Bits are sample data for now"><i class="coin"></i><b id="bits">0</b></span>${isMod() ? '<a href="#mod">Mod</a>' : ''}<a href="#profile">${esc(me.username)}</a><button class="btn sm" id="logout" type="button">Log out</button>`
         : `<b id="bits" hidden>0</b><a href="#login">Log in</a><a class="btn sm play" href="#register" style="font-size:11px">Sign up</a>`;
@@ -46,6 +46,11 @@ window.KBLive = {
     /* ---------- views ---------- */
     function install() {
       Object.assign(NAV, { login: '', register: '', mod: '' });
+
+      // Games: real player counts, and multiplayer for logged-in players. Guests get offline practice.
+      app.playOpts = () => me ? { online: true, name: me.username, colors: (D.users[me.username] || {}).c } : { name: 'Guest', hint: 'Log in to play with other people.' };
+      const sampleGames = V.games;
+      V.games = async () => { const p = (await get('/places')).playing; D.games.forEach(g => { g.live = true; g.playing = p[g.id] || 0; }); return sampleGames(); };
 
       V.login = () => me ? V.home() : `<div class="narrow">${panel('Log in', `<form class="pad form" data-form="login"><label>Username or email<input name="login" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" required></label><button class="btn play" type="submit">Log in</button><span class="small muted">No account? <a href="#register">Sign up with an invite code</a>.</span></form>`)}</div>`;
 

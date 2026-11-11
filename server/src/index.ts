@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { createApp } from './app.ts';
 import { createUser } from './auth.ts';
 import { openDb } from './db.ts';
+import { createGame } from './game.ts';
 import { migrate } from './schema.ts';
 
 const env = process.env, prod = env.NODE_ENV === 'production';
@@ -26,6 +27,11 @@ if (invite) {
   if (!prod) console.log(`Development invite code: ${invite}`);
 }
 
-const app = createApp({ db, secureCookies: prod, rateLimit: true, staticRoot: resolve(import.meta.dirname, '../..') });
+const game = createGame(db);
+const app = createApp({ db, secureCookies: prod, rateLimit: true, staticRoot: resolve(import.meta.dirname, '../..'), places: game.counts });
 const port = Number(env.PORT) || 3000;
-serve({ fetch: app.fetch, port }, () => console.log(`Kubox is running on http://localhost:${port}`));
+const server = serve({ fetch: app.fetch, port }, () => console.log(`Kubox is running on http://localhost:${port}`));
+game.attach(server as import('node:http').Server);
+
+// Save the sandbox before the host stops the container.
+for (const sig of ['SIGTERM', 'SIGINT'] as const) process.on(sig, () => { game.close().catch(() => {}).finally(() => process.exit(0)); });

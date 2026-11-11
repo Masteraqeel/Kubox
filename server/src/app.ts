@@ -26,6 +26,7 @@ export function createApp(o: Options) {
   forumRoutes(app, o, limit);
   groupRoutes(app, o, limit);
   modRoutes(app, o, limit);
+  app.get('/api/places', c => c.json({ playing: o.places ? o.places() : {} }));
   app.all('/api/*', c => c.json({ error: 'No such endpoint.' }, 404));
   app.get('/healthz', c => c.text('ok'));
 

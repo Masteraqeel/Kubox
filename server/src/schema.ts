@@ -111,6 +111,11 @@ create table if not exists group_events (
   starts_at timestamptz not null,
   created_by int not null references users(id)
 );
+create table if not exists place_state (
+  place text primary key,
+  bricks text not null,
+  updated_at timestamptz not null default now()
+);
 create table if not exists reports (
   id serial primary key,
   reporter_id int not null references users(id),

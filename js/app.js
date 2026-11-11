@@ -86,18 +86,18 @@
   };
 
   V.games = () => `<div class="head"><h1>Games</h1><span class="muted">Three first-party places. Each one opens in this page.</span></div>
-    <div class="grid wide">${D.games.map(g => `<div class="card"><a class="art" href="#play-${g.id}">${thumb(g)}</a><div class="meta"><a href="#play-${g.id}"><b>${esc(g.name)}</b></a><span class="muted small">by ${esc(g.by)}</span><span>${esc(g.desc)}</span><span class="small muted num"><i class="dot"></i>${g.playing} playing · ${g.visits} visits · ${g.likes}% liked</span><div><a class="btn play" href="#play-${g.id}">Play</a></div></div></div>`).join('')}</div>`;
+    <div class="grid wide">${D.games.map(g => `<div class="card"><a class="art" href="#play-${g.id}">${thumb(g)}</a><div class="meta"><a href="#play-${g.id}"><b>${esc(g.name)}</b></a><span class="muted small">by ${esc(g.by)}</span><span>${esc(g.desc)}</span><span class="small muted num"><i class="dot${g.live && !g.playing ? ' off' : ''}"></i>${g.live ? g.playing + ' playing now' : `${g.playing} playing · ${g.visits} visits · ${g.likes}% liked`}</span><div><a class="btn play" href="#play-${g.id}">Play</a></div></div></div>`).join('')}</div>`;
 
   V.play = id => {
     const g = D.games.find(x => x.id === id) || D.games[0];
     setTimeout(() => {
       const el = document.getElementById('stage');
       if (!el) return;
-      if (window.THREE && window.KBGame) { try { KBGame.start(el, g); } catch (e) { el.innerHTML = '<p class="pad">The 3D view could not start in this browser: ' + esc(e.message) + '</p>'; } }
+      if (window.THREE && window.KBGame) { try { KBGame.start(el, g, App.playOpts ? App.playOpts() : { name: ME, colors: (D.users[ME] || {}).c }); } catch (e) { el.innerHTML = '<p class="pad">The 3D view could not start in this browser: ' + esc(e.message) + '</p>'; } }
       else el.innerHTML = '<p class="pad">The 3D library did not load. Check that vendor/three.min.js is present.</p>';
     }, 0);
     return `<div class="head"><h1>${esc(g.name)}</h1><a class="btn warn" href="#games">Leave game</a></div><div id="stage" class="stage"></div>
-    <p class="muted small" style="margin-top:8px">Move with W A S D or the arrow keys. Space jumps. Drag to turn the camera, scroll to zoom. Keys 1, 2 and 3 pick a tool. A keyboard is required for now.</p>`;
+    <p class="muted small" style="margin-top:8px">Move with W A S D or the arrow keys. Space jumps. Drag to turn the camera, scroll to zoom. Keys 1, 2 and 3 pick a tool. Enter opens chat. A keyboard is required for now.</p>`;
   };
 
   V.forum = cat => {
