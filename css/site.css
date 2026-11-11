@@ -75,12 +75,24 @@ main { padding-top: 14px; padding-bottom: 20px; min-height: 480px; }
 .btn.warn { background: var(--red); border-bottom-color: #8f1f19; }
 .btn.plain { background: var(--soft); color: var(--ink); border: 1px solid var(--line); border-bottom-width: 3px; }
 .btn[disabled] { opacity: .5; cursor: not-allowed; }
-textarea, input[type=text], select { font: 12px var(--body); width: 100%; padding: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+textarea, input:not([type=checkbox]):not([type=color]), select { font: 12px var(--body); width: 100%; padding: 6px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
 textarea { min-height: 70px; resize: vertical; }
 .form { display: grid; gap: 6px; justify-items: start; }
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
 .tabs button { font: bold 12px var(--body); padding: 5px 10px; border: 1px solid var(--line); background: var(--soft); color: var(--ink); cursor: pointer; }
 .tabs button.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; width: 100%; }
+.fields label, .form label { display: grid; gap: 3px; font-size: 11px; color: var(--muted); width: 100%; }
+.check { display: flex !important; grid-template-columns: none; align-items: center; gap: 6px; color: var(--ink) !important; font-size: 12px !important; }
+input[type=color] { width: 44px; height: 28px; padding: 0; border: 1px solid var(--line); background: #fff; }
+.btn.sm { font-size: 10px; padding: 3px 7px 2px; border-bottom-width: 2px; }
+.pager { display: flex; gap: 4px; flex-wrap: wrap; margin: 0 0 12px; }
+.pager a, .pager b { padding: 3px 9px; border: 1px solid var(--line); background: #fff; }
+.pager b { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.narrow { max-width: 460px; margin: 0 auto; }
+.role { background: var(--navy); color: var(--yellow); font-size: 9px; font-weight: bold; padding: 1px 5px; text-transform: uppercase; }
 
 /* Tables (forum) */
 .scroll { overflow-x: auto; }

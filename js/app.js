@@ -1,6 +1,6 @@
 /* Kubox prototype: website shell. Hash routes use plain names such as #forum-clans or #item-3. */
 (function () {
-  const D = window.KB, ME = D.me;
+  const D = window.KB; let ME = D.me;
   const main = document.getElementById('main');
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = n => Number(n).toLocaleString('en-US');
@@ -196,15 +196,23 @@
 
   /* ---------- router ---------- */
   const NAV = { thread: 'forum', group: 'groups', item: 'catalog', play: 'games' };
+  let seq = 0;
   function render() {
     if (window.KBGame) KBGame.stop();
     const h = (location.hash || '#home').slice(1), i = h.indexOf('-');
     const r = i < 0 ? h : h.slice(0, i), arg = i < 0 ? '' : h.slice(i + 1);
-    const view = V[r] || V.home;
-    main.innerHTML = view(arg);
-    document.getElementById('bits').textContent = fmt(st.bits);
-    document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.r === (NAV[r] || r)));
-    render.route = r;
+    const view = V[r] || V.home, my = ++seq;
+    const done = html => {
+      if (my !== seq) return;
+      main.innerHTML = html;
+      document.getElementById('bits').textContent = fmt(st.bits);
+      document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.r === (NAV[r] || r)));
+      if (App.after) App.after(r);
+    };
+    const fail = e => done(`<div class="panel pad"><b>${esc(e.message || 'Something went wrong.')}</b><p class="muted">Go back or try again.</p></div>`);
+    let out;
+    try { out = view(arg); } catch (e) { return fail(e); }
+    if (out && typeof out.then === 'function') { if (!main.innerHTML) main.innerHTML = '<p class="muted">Loading</p>'; out.then(done, fail); } else done(out);
   }
   window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 
@@ -236,17 +244,24 @@
     },
     tradewith: el => { tr = { partner: el.dataset.u, give: [], get: [] }; location.hash = '#trade'; return true; }
   };
+  const F = {
+    reply: f => { const id = f.dataset.id, body = f.querySelector('textarea').value.trim(); if (!body) return true; (st.replies[id] = st.replies[id] || []).push({ u: ME, t: now(), body }); toast('Posted.'); },
+    wall: f => { const id = f.dataset.id, body = f.querySelector('input').value.trim(); if (!body) return true; (st.walls[id] = st.walls[id] || []).unshift({ u: ME, t: now(), body }); toast('Posted.'); }
+  };
+  // A handler may return a promise. A truthy result means "do not re-render".
+  const run = fn => { let out; try { out = fn(); } catch (e) { return toast(e.message); } Promise.resolve(out).then(skip => { save(); if (!skip) render(); }, e => toast(e.message)); };
   main.addEventListener('click', e => {
-    const el = e.target.closest('[data-act]'); if (!el || el.tagName === 'SELECT' || el.disabled) return;
-    const skip = A[el.dataset.act](el); save(); if (!skip) render();
+    const el = e.target.closest('[data-act]'); if (!el || el.tagName === 'SELECT' || el.disabled || !A[el.dataset.act]) return;
+    run(() => A[el.dataset.act](el));
   });
-  main.addEventListener('change', e => { if (e.target.dataset.act === 'partner') { tr = { partner: e.target.value, give: [], get: [] }; render(); } });
-  main.addEventListener('submit', e => {
-    e.preventDefault(); const f = e.target, id = f.dataset.id, box = f.querySelector('textarea, input'), body = box.value.trim(); if (!body) return;
-    if (f.dataset.form === 'reply') (st.replies[id] = st.replies[id] || []).push({ u: ME, t: now(), body });
-    else (st.walls[id] = st.walls[id] || []).unshift({ u: ME, t: now(), body });
-    save(); render(); toast('Posted.');
+  main.addEventListener('change', e => {
+    const el = e.target;
+    if (el.dataset.act === 'partner') { tr = { partner: el.value, give: [], get: [] }; render(); }
+    else if (el.dataset.change && A[el.dataset.change]) run(() => A[el.dataset.change](el));
   });
+  main.addEventListener('submit', e => { e.preventDefault(); const f = e.target; if (F[f.dataset.form]) run(() => F[f.dataset.form](f)); });
 
-  render();
+  const App = window.KBApp = { D, V, A, F, NAV, st, render, run, esc, fmt, avatar, emblem, panel, toast, ulink, me: () => ME, setMe: n => { ME = n; D.me = n; } };
+  // Live mode (js/live.js) checks for the API and replaces the community views. Without an API the sample data stays.
+  (window.KBLive ? window.KBLive.boot(App) : Promise.resolve()).then(render, render);
 })();
