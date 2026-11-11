@@ -99,7 +99,8 @@ export function createGame(db: DB) {
     // The id must be registered before join() runs, because join() sends the welcome message.
     const id: number = live.room.nextId;
     live.conns.set(id, ws); live.users.set(user.id, id);
-    live.room.join({ name: user.username, colors: user.colors.split(','), role: user.role, userId: user.id });
+    const look = user.colors.split(',');
+    live.room.join({ name: user.username, colors: look.slice(0, 3), hat: look[3] ?? '', role: user.role, userId: user.id });
 
     function drop(which: number) {
       if (!live.conns.delete(which)) return;

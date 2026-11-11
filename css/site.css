@@ -127,6 +127,11 @@ td.c, th.c { text-align: center; white-space: nowrap; }
 .bar { height: 6px; background: var(--red); position: relative; margin-top: 4px; }
 .bar i { position: absolute; inset: 0 auto 0 0; background: var(--green); }
 
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.swatch { width: 30px; height: 30px; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+.swatch.on { border-color: var(--navy); outline: 3px solid var(--yellow); }
+.slot[disabled] { opacity: .45; cursor: not-allowed; }
+
 /* Trade */
 .trade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .inv { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }

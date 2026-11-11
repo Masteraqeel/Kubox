@@ -1,4 +1,4 @@
-# Kubox (0.3)
+# Kubox (0.4)
 
 A community-first brick game platform: forums, war groups, trainings, limiteds trading and very simple games.
 
@@ -27,6 +27,8 @@ Open http://localhost:3000. The development admin is `Founder` / `kubox-dev-pass
 
 One container serves the site and the API. Any host that runs a Dockerfile and offers Postgres works (Render, Railway, Fly and similar).
 
+On Render there is a shortcut: choose New, then Blueprint, and pick this repository. `render.yaml` creates the service and the database and asks for the admin values. The manual steps for any host:
+
 1. Create a Postgres database on the host and copy its connection string.
 2. Create a web service from this repository. It builds from the `Dockerfile` in the root.
 3. Set the environment variables listed in `server/.env.example`: `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and optionally `INVITE_CODE` and `INVITE_USES`.
@@ -41,6 +43,7 @@ The site must be served over HTTPS in production, because the session cookie is 
 | --- | --- |
 | Accounts | Invite-only sign-up with an 18+ confirmation. Passwords hashed with scrypt. Sessions in an HttpOnly cookie, 30 days. |
 | Invites | Members get three single-use codes. Admins create codes with any number of uses. |
+| Avatar | Head, torso and leg colours and a hat, saved to the account and shown on the site and in games. Only the three free hats can be worn until item ownership is tracked. |
 | Forum | Six boards, threads, replies, pagination, pin and lock, authors and moderators can remove posts. |
 | Groups | Create, join, leave. Ranks by level (owner 255, officers 200+). Shout, wall, events. Officers manage lower ranks. Enemies are one-sided, allies need acceptance. |
 | Moderation | Report posts and wall posts. Moderators see a queue, remove content and ban accounts. Admins appoint moderators. |
@@ -65,6 +68,7 @@ Known gaps: no email verification or password reset (there is no mail service ye
 | Area | Route |
 | --- | --- |
 | Home | `#home` |
+| Avatar editor | `#avatar` |
 | Log in, sign up | `#login`, `#register` (server only) |
 | Games | `#games`, `#play-sandbox`, `#play-training`, `#play-arena` |
 | Forum | `#forum`, `#forum-clans`, `#thread-101` |

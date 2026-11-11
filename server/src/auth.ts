@@ -1,11 +1,13 @@
 import type { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { randomBytes } from 'node:crypto';
+import { createRequire } from 'node:module';
 import type { Q } from './db.ts';
 import { HttpError, HEX, checkPassword, hashPassword, ip, isUnique, json, need, newToken, pub, sha, str } from './util.ts';
 import type { Ctx, Env, Limit, Options } from './util.ts';
 
 const COOKIE = 'kbx', DAYS = 30;
+const FREE_HATS: string[] = createRequire(import.meta.url)('../../js/sim.js').FREE_HATS;
 const USERNAME = /^[A-Za-z0-9]{3,20}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -91,9 +93,19 @@ export function authRoutes(app: Hono<Env>, o: Options, limit: Limit) {
   app.patch('/api/me', async c => {
     const u = need(c), b = await json(c);
     if (typeof b.blurb === 'string') await db.query('update users set blurb = $1 where id = $2', [b.blurb.trim().slice(0, 300), u.id]);
-    if (Array.isArray(b.colors)) {
-      if (b.colors.length !== 3 || !b.colors.every((x: unknown) => typeof x === 'string' && HEX.test(x))) throw new HttpError(400, 'Pick three colours.');
-      await db.query('update users set colors = $1 where id = $2', [b.colors.join(',').toLowerCase(), u.id]);
+    if (Array.isArray(b.colors) || typeof b.hat === 'string') {
+      const now = pub(u.username, u.colors);
+      let colors = now.colors, hat = now.hat;
+      if (Array.isArray(b.colors)) {
+        if (b.colors.length !== 3 || !b.colors.every((x: unknown) => typeof x === 'string' && HEX.test(x))) throw new HttpError(400, 'Pick three colours.');
+        colors = b.colors.map((x: string) => x.toLowerCase());
+      }
+      if (typeof b.hat === 'string') {
+        // Only free hats for now: item ownership is not tracked by the server until the economy is built.
+        if (b.hat !== '' && !FREE_HATS.includes(b.hat)) throw new HttpError(400, 'You cannot wear that hat yet.');
+        hat = b.hat;
+      }
+      await db.query('update users set colors = $1 where id = $2', [[...colors, ...(hat ? [hat] : [])].join(','), u.id]);
     }
     return c.json({ ok: true });
   });

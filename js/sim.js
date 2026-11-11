@@ -11,6 +11,9 @@
   const BOTS = ['Bot Alpha', 'Bot Bravo', 'Bot Charlie', 'Bot Delta', 'Bot Echo', 'Bot Foxtrot']; // usernames cannot contain spaces, so these never clash with a player
   const BOT_COLORS = [['#f2f2ee', '#d9342b', '#3a3f4b'], ['#3a3f4b', '#111522', '#d9342b'], ['#9aa3ad', '#e07b1a', '#3a3f4b'], ['#f5d76e', '#2fa84f', '#1c6b33'], ['#c9a27a', '#3a5f3a', '#22301f'], ['#7fe3ff', '#f2f2ee', '#2b6fd9']];
   const MAX_BRICKS = 4000, MAX_HEIGHT = 120;
+  // Wearable hats and their colours. FREE_HATS need no ownership; the rest are catalog items.
+  const HATS = { cap: '#2b6fd9', cone: '#e07b1a', shades: '#3a3f4b', tophat: '#f5b800', crown: '#e07b1a', visor: '#7fe3ff', horns: '#d9342b' };
+  const FREE_HATS = ['cap', 'cone', 'shades'];
 
   /* ---------- physics ---------- */
   function hits(w, x, y, z) {
@@ -104,17 +107,17 @@
     _sane(b) { return Array.isArray(b) && b.length >= 7 && [0, 1, 2].every(i => Number.isInteger(b[i]) && Math.abs(b[i]) <= 200) && [3, 4, 5].every(i => Number.isInteger(b[i]) && b[i] >= 1 && b[i] <= 64) && /^#[0-9a-f]{6}$/i.test(b[6]) && this.world.bricks.length < MAX_BRICKS; }
     _add(x, y, z, w, h, d, color, owner, locked) { const b = { id: this.nextBrick++, x, y, z, w, h, d, color, owner, locked }; this.world.bricks.push(b); return b; }
     _ent(id, name, colors, x, y, z) {
-      const e = { id, name, colors, bot: false, role: 'member', userId: 0, body: newBody(x, y, z), queue: [], last: { mx: 0, mz: 0, jump: false }, ack: 0, idle: 0, kos: 0, outs: 0, hitBy: 0, swingCd: 0, moving: false, placeTokens: 8, chatTokens: 5 };
+      const e = { id, name, colors, hat: '', bot: false, role: 'member', userId: 0, body: newBody(x, y, z), queue: [], last: { mx: 0, mz: 0, jump: false }, ack: 0, idle: 0, kos: 0, outs: 0, hitBy: 0, swingCd: 0, moving: false, placeTokens: 8, chatTokens: 5 };
       this.ents.set(id, e); return e;
     }
     get players() { let n = 0; this.ents.forEach(e => { if (!e.bot) n++; }); return n; }
     static wire(b) { return [b.id, b.x, b.y, b.z, b.w, b.h, b.d, b.color, b.owner, b.locked ? 1 : 0]; }
-    _info(e) { return { id: e.id, name: e.name, colors: e.colors, bot: e.bot }; }
+    _info(e) { return { id: e.id, name: e.name, colors: e.colors, hat: e.hat, bot: e.bot }; }
     _scores() { const rows = []; this.ents.forEach(e => rows.push([e.id, e.kos, e.outs])); return rows; }
 
     join(info) {
       const id = this.nextId++, s = this.spawn, e = this._ent(id, info.name, info.colors, s[0] + ((id * 3) % 7) - 3, s[1], s[2] + ((id * 5) % 5) - 2);
-      e.role = info.role || 'member'; e.userId = info.userId || 0;
+      e.role = info.role || 'member'; e.userId = info.userId || 0; e.hat = HATS[info.hat] ? info.hat : '';
       const b = e.body;
       this.emit(null, { t: 'join', e: this._info(e) });
       const ents = []; this.ents.forEach(o => ents.push(this._info(o)));
@@ -207,5 +210,5 @@
     save() { return this.world.bricks.filter(b => !b.locked).map(b => [b.x, b.y, b.z, b.w, b.h, b.d, b.color, b.owner]); }
   }
 
-  return { COLORS, SIZES, R, H, SPEED, JUMP, DT, PLACES: ['sandbox', 'training', 'arena'], hits, newBody, stepBody, applyInput, canPlace, preset, Room };
+  return { HATS, FREE_HATS, COLORS, SIZES, R, H, SPEED, JUMP, DT, PLACES: ['sandbox', 'training', 'arena'], hits, newBody, stepBody, applyInput, canPlace, preset, Room };
 });

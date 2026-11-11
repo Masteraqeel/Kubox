@@ -51,7 +51,8 @@ export function intParam(v: string | undefined, label = 'id'): number {
 export const page = (c: Ctx) => { const n = Number(c.req.query('page')); return Number.isInteger(n) && n > 0 ? n : 1; };
 export const json = async (c: Ctx): Promise<any> => (await c.req.json().catch(() => null)) ?? {};
 
-export const pub = (username: string, colors: string) => ({ username, colors: colors.split(',') });
+// The users.colors column holds the whole look: three colours, then an optional hat ("#aaa,#bbb,#ccc,cap").
+export const pub = (username: string, colors: string) => { const p = colors.split(','); return { username, colors: p.slice(0, 3), hat: p[3] ?? '' }; };
 export function need(c: Ctx): User {
   const u = c.get('user');
   if (!u) throw new HttpError(401, 'Log in to do that.');

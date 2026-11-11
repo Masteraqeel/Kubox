@@ -16,7 +16,8 @@ window.KBLive = {
     /* ---------- helpers ---------- */
     const col = c => (/^#[0-9a-f]{6}$/i.test(c) ? c : '#888888');
     // Register a player so the shared avatar and link helpers can draw them.
-    const seen = u => { if (u && u.username) D.users[u.username] = Object.assign(D.users[u.username] || {}, { c: (u.colors || []).map(col) }); return u; };
+    const HATS = (window.KBSim || {}).HATS || {}, FREE = (window.KBSim || {}).FREE_HATS || [];
+    const seen = u => { if (u && u.username) D.users[u.username] = Object.assign(D.users[u.username] || {}, { c: (u.colors || []).slice(0, 3).map(col), hat: HATS[u.hat] ? u.hat : '' }); return u; };
     const G = g => ({ id: g.slug, name: g.name, tag: g.tag, col: col(g.color), col2: col(g.color2) });
     const isMod = () => me && (me.role === 'mod' || me.role === 'admin');
     function when(iso) {
@@ -47,8 +48,18 @@ window.KBLive = {
     function install() {
       Object.assign(NAV, { login: '', register: '', mod: '' });
 
+      // Avatar: saved to the account, so other players see it. Only the free hats can be worn until item ownership is real.
+      const sampleAvatar = V.avatar;
+      V.avatar = () => (me ? sampleAvatar() : V.login());
+      Object.assign(app.look, {
+        get: () => ({ c: (D.users[me.username].c || []).slice(0, 3), hat: D.users[me.username].hat || '' }),
+        set: async look => { await api('PATCH', '/me', { colors: look.c, hat: look.hat }); seen({ username: me.username, colors: look.c, hat: look.hat }); },
+        locked: shape => (FREE.includes(shape) ? '' : 'Wearable once the catalog is live'),
+        note: 'Limited hats unlock when the catalog and trading go live. The three free hats are yours now.'
+      });
+
       // Games: real player counts, and multiplayer for logged-in players. Guests get offline practice.
-      app.playOpts = () => me ? { online: true, name: me.username, colors: (D.users[me.username] || {}).c } : { name: 'Guest', hint: 'Log in to play with other people.' };
+      app.playOpts = () => me ? { online: true, name: me.username, colors: (D.users[me.username] || {}).c, hat: (D.users[me.username] || {}).hat } : { name: 'Guest', hint: 'Log in to play with other people.' };
       const sampleGames = V.games;
       V.games = async () => { const p = (await get('/places')).playing; D.games.forEach(g => { g.live = true; g.playing = p[g.id] || 0; }); return sampleGames(); };
 
@@ -128,7 +139,7 @@ window.KBLive = {
         let side = '';
         if (own) {
           const inv = await get('/invites');
-          side = panel('Edit profile', `<form class="pad form" data-form="profile"><label>About you<textarea name="blurb" maxlength="300">${esc(p.blurb)}</textarea></label><div class="fields"><label>Head<input type="color" name="c0" value="${col(p.colors[0])}"></label><label>Body<input type="color" name="c1" value="${col(p.colors[1])}"></label><label>Feet<input type="color" name="c2" value="${col(p.colors[2])}"></label></div><button class="btn" type="submit">Save</button></form>`)
+          side = panel('Edit profile', `<form class="pad form" data-form="profile"><label>About you<textarea name="blurb" maxlength="300">${esc(p.blurb)}</textarea></label><div class="tools"><button class="btn" type="submit">Save</button><a class="btn plain" href="#avatar">Customise avatar</a></div></form>`)
             + panel('Your invites', `<div class="pad"><p class="muted">${inv.limit ? 'You can create ' + inv.limit + ' single-use invite codes. Give them to people you want here.' : 'As an admin you can create as many codes as you need.'}</p>${inv.invites.map(i => `<div class="stat"><code>${esc(i.code)}</code><span class="num">${i.uses} of ${i.max_uses} used</span></div>`).join('') || '<p class="muted">No codes yet.</p>'}<form class="tools" data-form="invite">${inv.limit ? '' : '<label class="check">Uses <input name="maxUses" type="number" min="1" max="1000" value="1" style="width:80px"></label>'}<button class="btn sm" type="submit" ${inv.limit && inv.invites.length >= inv.limit ? 'disabled' : ''}>Create invite code</button></form></div>`);
         } else if (isMod() && p.role !== 'admin') side = panel('Moderation', `<div class="pad tools"><button class="btn sm warn" data-act="ban" data-u="${esc(p.username)}" data-v="${p.banned ? '' : 1}">${p.banned ? 'Lift ban' : 'Ban account'}</button></div>`);
         return `<div class="cols2" style="grid-template-columns:240px 1fr"><div>${panel(esc(p.username) + role(p.role), `<div class="pad">${avatar(p.username, 200).replace('width="200" height="200"', 'style="width:100%;height:auto"')}<p style="margin-top:8px" class="body-text">${esc(p.blurb) || '<span class="muted">No description yet.</span>'}</p>${p.banned ? '<p class="enemy">This account is banned.</p>' : ''}<div class="stat"><span>Joined</span><b>${new Date(p.joined).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</b></div><div class="stat"><span>Forum posts</span><b class="num">${fmt(p.posts)}</b></div></div>`)}</div>
@@ -153,7 +164,7 @@ window.KBLive = {
         newrank: async f => { await api('POST', '/groups/' + f.dataset.id + '/ranks', { name: val(f, 'name'), level: +val(f, 'level') }); toast('Rank added.'); },
         relation: async f => { const r = await api('POST', '/groups/' + f.dataset.id + '/relations', { other: val(f, 'other').trim().toLowerCase(), kind: val(f, 'kind') }); toast(r.status === 'pending' ? 'Alliance request sent. Their owner has to accept it.' : 'Enemy declared.'); },
         newgroup: async f => go('#group-' + (await api('POST', '/groups', { name: val(f, 'name'), tag: val(f, 'tag'), description: val(f, 'description'), color: val(f, 'color'), color2: val(f, 'color2') })).slug),
-        profile: async f => { await api('PATCH', '/me', { blurb: val(f, 'blurb'), colors: [val(f, 'c0'), val(f, 'c1'), val(f, 'c2')] }); toast('Profile saved.'); },
+        profile: async f => { await api('PATCH', '/me', { blurb: val(f, 'blurb') }); toast('Profile saved.'); },
         invite: async f => { const r = await api('POST', '/invites', { maxUses: +val(f, 'maxUses') || 1 }); toast('Invite code created: ' + r.code); },
         report: async f => { await api('POST', '/reports', { kind: reporting.kind, targetId: reporting.id, reason: val(f, 'reason') }); reporting = null; toast('Report sent to the moderators.'); }
       });

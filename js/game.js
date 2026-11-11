@@ -26,7 +26,7 @@ window.KBGame = (function () {
     }
     return S.mat[k];
   }
-  function makeAvatar(c) {
+  function makeAvatar(c, hat) {
     const g = new THREE.Group(), m = col => new THREE.MeshLambertMaterial({ color: col });
     const box = (w, h, d, x, y, z, mat, par) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); o.position.set(x, y, z); (par || g).add(o); return o; };
     const fl = box(.6, .7, .9, -.4, .35, 0, m(c[2])), fr = box(.6, .7, .9, .4, .35, 0, m(c[2]));
@@ -34,6 +34,17 @@ window.KBGame = (function () {
     const arm = new THREE.Group(); arm.position.set(.97, 2.0, 0); g.add(arm); box(.4, 1.2, .5, 0, -.55, 0, m(c[1]), arm);
     const sword = box(.18, .3, 2.8, 0, -1.1, 1.3, m('#cfd6e0'), arm); sword.visible = false;
     box(1.5, 1.4, 1.5, 0, 2.8, 0, m(c[0])); box(1.2, .4, .1, 0, 2.85, .76, m('#1b2233'));
+    const hc = Sim.HATS[hat];
+    if (hc) {
+      const hm = m(hc), dark = m('#1b2233');
+      if (hat === 'tophat') { box(2, .15, 2, 0, 3.6, 0, hm); box(1.25, 1, 1.25, 0, 4.15, 0, hm); box(1.3, .2, 1.3, 0, 3.8, 0, dark); }
+      else if (hat === 'crown') { box(1.55, .45, 1.55, 0, 3.75, 0, hm); [[-.6, -.6], [.6, -.6], [-.6, .6], [.6, .6]].forEach(q => box(.32, .4, .32, q[0], 4.15, q[1], hm)); }
+      else if (hat === 'visor') { box(1.62, .55, .2, 0, 2.85, .8, hm); box(1.3, .25, .06, 0, 2.85, .92, dark); }
+      else if (hat === 'horns') { box(.28, .95, .28, -.55, 3.95, 0, hm).rotation.z = .35; box(.28, .95, .28, .55, 3.95, 0, hm).rotation.z = -.35; }
+      else if (hat === 'cap') { box(1.56, .4, 1.56, 0, 3.72, 0, hm); box(1.3, .1, .7, 0, 3.58, 1.05, hm); }
+      else if (hat === 'cone') { box(1.4, .12, 1.4, 0, 3.58, 0, hm); const cone = new THREE.Mesh(new THREE.ConeGeometry(.6, 1.5, 14), hm); cone.position.set(0, 4.38, 0); g.add(cone); }
+      else if (hat === 'shades') { box(1.4, .36, .12, 0, 2.9, .82, hm); }
+    }
     S.scene.add(g);
     return { g, fl, fr, arm, sword, walk: 0, swing: 0 };
   }
@@ -43,7 +54,7 @@ window.KBGame = (function () {
     g.fillStyle = bot ? 'rgba(60,66,80,.7)' : 'rgba(20,28,50,.8)'; g.fillRect(128 - w / 2, 10, w, 44);
     g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name, 128, 33, 240);
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
-    s.scale.set(5, 1.25, 1); s.position.y = 4.6; av.g.add(s);
+    s.scale.set(5, 1.25, 1); s.position.y = 5.5; av.g.add(s);
   }
   const colours = c => (Array.isArray(c) && c.length === 3 && c.every(x => /^#[0-9a-f]{6}$/i.test(x)) ? c : ['#f5b800', '#2b6fd9', '#1d2b4f']);
   function pose(av, x, y, z, face, moving, dt, armed) {
@@ -68,7 +79,7 @@ window.KBGame = (function () {
   }
   function addEnt(e) {
     if (S.ents.has(e.id)) return;
-    const av = makeAvatar(colours(e.colors)); nameTag(av, e.name, e.bot); av.g.visible = false;
+    const av = makeAvatar(colours(e.colors), e.hat); nameTag(av, e.name, e.bot); av.g.visible = false;
     S.ents.set(e.id, { id: e.id, name: e.name, bot: e.bot, av, buf: [] });
   }
   function removeEnt(id) { const e = S.ents.get(id); if (!e) return; S.scene.remove(e.av.g); S.ents.delete(id); }
@@ -87,7 +98,7 @@ window.KBGame = (function () {
       m.bricks.forEach(addBrick);
       const mine = m.ents.find(e => e.id === m.you);
       S.names.set(m.you, mine.name);
-      S.me = { id: m.you, body: Sim.newBody(m.me[0], m.me[1], m.me[2]), av: makeAvatar(colours(mine.colors)) };
+      S.me = { id: m.you, body: Sim.newBody(m.me[0], m.me[1], m.me[2]), av: makeAvatar(colours(mine.colors), mine.hat) };
       m.ents.forEach(e => { S.names.set(e.id, e.name); if (e.id !== m.you) addEnt(e); });
       S.scores = m.scores; status(); hud(); board();
     } else if (m.t === 'join') { if (m.e.id !== S.myId && S.me) { S.names.set(m.e.id, m.e.name); addEnt(m.e); log(m.e.name + ' joined.', 1); status(); board(); } }
@@ -291,7 +302,7 @@ window.KBGame = (function () {
       // An older save format stored rows without an owner; the Room accepts both.
       S.room = new Sim.Room(place.id, { bricks: Array.isArray(saved) && saved.length ? saved : undefined, emit: (target, m) => { if (S && (target === null || target === S.localId)) onMsg(m); } });
       S.localId = S.room.nextId;
-      S.room.join({ name: opts.name || 'Guest', colors: colours(opts.colors), role: 'admin', userId: 1 });
+      S.room.join({ name: opts.name || 'Guest', colors: colours(opts.colors), hat: opts.hat, role: 'admin', userId: 1 });
     }
     S.raf = requestAnimationFrame(frame);
   }

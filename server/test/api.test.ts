@@ -151,6 +151,17 @@ test('groups: enemies are one-sided, allies need acceptance', async () => {
   assert.deepEqual(il.relations.map((r: any) => r.kind), ['ally']);
 });
 
+test('avatar: colours and free hats are saved, other hats are refused', async () => {
+  assert.equal((await ana('PATCH', '/api/me', { colors: ['#111111', '#222222', '#333333'], hat: 'cap' })).status, 200);
+  assert.deepEqual((await ana('GET', '/api/me')).body.user, { username: 'ana', colors: ['#111111', '#222222', '#333333'], hat: 'cap', role: 'member' });
+  assert.equal((await ana('PATCH', '/api/me', { hat: 'crown' })).status, 400, 'limited hats need ownership, which does not exist yet');
+  assert.equal((await ana('PATCH', '/api/me', { colors: ['#111111', 'red', '#333333'] })).status, 400);
+  assert.equal((await ana('PATCH', '/api/me', { colors: ['#aaaaaa', '#bbbbbb', '#cccccc'] })).status, 200);
+  assert.equal((await anon('GET', '/api/users/ana')).body.hat, 'cap', 'changing colours keeps the hat');
+  assert.equal((await ana('PATCH', '/api/me', { hat: '' })).status, 200);
+  assert.deepEqual([(await anon('GET', '/api/users/ana')).body.hat, (await anon('GET', '/api/users/ana')).body.colors.length], ['', 3]);
+});
+
 test('moderation: reports, removal, bans and invites', async () => {
   const t = await cy('POST', '/api/boards/general/threads', { title: 'Rules', body: 'Be decent.' });
   const bad = await cy('POST', `/api/threads/${t.body.id}/posts`, { body: 'Something rude' });

@@ -29,9 +29,20 @@
   }
 
   /* ---------- drawn art ---------- */
-  function avatar(name, s) {
-    s = s || 48; const c = (D.users[name] || { c: ['#999', '#666', '#444'] }).c;
-    return `<svg class="av" width="${s}" height="${s}" viewBox="0 0 64 64" role="img" aria-label="${esc(name)}"><rect width="64" height="64" fill="#cfe6f7"/><rect y="54" width="64" height="10" fill="#4a9b4f"/><rect x="20" y="46" width="10" height="9" fill="${c[2]}"/><rect x="34" y="46" width="10" height="9" fill="${c[2]}"/><rect x="11" y="31" width="7" height="13" fill="${c[1]}"/><rect x="46" y="31" width="7" height="13" fill="${c[1]}"/><rect x="18" y="30" width="28" height="17" fill="${c[1]}"/><rect x="16" y="6" width="32" height="25" rx="2" fill="${c[0]}"/><rect x="20" y="14" width="24" height="8" rx="1" fill="#1b2233"/><rect x="23" y="16" width="6" height="4" fill="#7fe3ff"/><rect x="35" y="16" width="6" height="4" fill="#7fe3ff"/></svg>`;
+  // Hats drawn on the 2D avatar, in the figure's own coordinates (the head spans x 16 to 48, y 6 to 31).
+  const HAT2D = {
+    tophat: c => `<rect x="10" y="2" width="44" height="5" fill="${c}"/><rect x="18" y="-14" width="28" height="17" fill="${c}"/><rect x="18" y="-3" width="28" height="4" fill="#1b2233"/>`,
+    crown: c => `<polygon points="16,7 16,-8 24,-1 32,-11 40,-1 48,-8 48,7" fill="${c}"/><circle cx="24" cy="3" r="2" fill="#fff"/><circle cx="32" cy="3" r="2" fill="#fff"/><circle cx="40" cy="3" r="2" fill="#fff"/>`,
+    visor: c => `<rect x="13" y="12" width="38" height="12" rx="3" fill="${c}"/><rect x="17" y="15" width="30" height="5" fill="#1b2233"/>`,
+    horns: c => `<polygon points="18,7 11,-11 27,5" fill="${c}"/><polygon points="46,7 53,-11 37,5" fill="${c}"/>`,
+    cap: c => `<rect x="15" y="-1" width="34" height="9" rx="4" fill="${c}"/><rect x="34" y="5" width="20" height="4" fill="${c}"/>`,
+    cone: c => `<polygon points="32,-17 42,5 22,5" fill="${c}"/><polygon points="28.6,-9 35.4,-9 38,-3 26,-3" fill="#fff"/><rect x="17" y="4" width="30" height="4" fill="${c}"/>`,
+    shades: c => `<rect x="18" y="13" width="13" height="9" rx="1" fill="${c}"/><rect x="33" y="13" width="13" height="9" rx="1" fill="${c}"/><rect x="30" y="15" width="4" height="3" fill="${c}"/>`
+  };
+  const HATS = (window.KBSim || {}).HATS || {};
+  function avatar(name, s, look) {
+    s = s || 48; const u = look || D.users[name] || {}, c = u.c || ['#999', '#666', '#444'], hat = HATS[u.hat] && HAT2D[u.hat] ? HAT2D[u.hat](HATS[u.hat]) : '';
+    return `<svg class="av" width="${s}" height="${s}" viewBox="0 0 64 64" role="img" aria-label="${esc(name)}"><rect width="64" height="64" fill="#cfe6f7"/><rect y="56" width="64" height="8" fill="#4a9b4f"/><g transform="translate(5.8 12.4) scale(.82)"><rect x="20" y="46" width="10" height="9" fill="${c[2]}"/><rect x="34" y="46" width="10" height="9" fill="${c[2]}"/><rect x="11" y="31" width="7" height="13" fill="${c[1]}"/><rect x="46" y="31" width="7" height="13" fill="${c[1]}"/><rect x="18" y="30" width="28" height="17" fill="${c[1]}"/><rect x="16" y="6" width="32" height="25" rx="2" fill="${c[0]}"/><rect x="20" y="14" width="24" height="8" rx="1" fill="#1b2233"/><rect x="23" y="16" width="6" height="4" fill="#7fe3ff"/><rect x="35" y="16" width="6" height="4" fill="#7fe3ff"/>${hat}</g></svg>`;
   }
   const SH = {
     tophat: c => `<rect x="10" y="46" width="44" height="6" fill="${c}"/><rect x="18" y="14" width="28" height="32" fill="${c}"/><rect x="18" y="36" width="28" height="5" fill="#1b2233"/>`,
@@ -93,7 +104,7 @@
     setTimeout(() => {
       const el = document.getElementById('stage');
       if (!el) return;
-      if (window.THREE && window.KBGame) { try { KBGame.start(el, g, App.playOpts ? App.playOpts() : { name: ME, colors: (D.users[ME] || {}).c }); } catch (e) { el.innerHTML = '<p class="pad">The 3D view could not start in this browser: ' + esc(e.message) + '</p>'; } }
+      if (window.THREE && window.KBGame) { try { KBGame.start(el, g, App.playOpts ? App.playOpts() : { name: ME, colors: (D.users[ME] || {}).c, hat: (D.users[ME] || {}).hat }); } catch (e) { el.innerHTML = '<p class="pad">The 3D view could not start in this browser: ' + esc(e.message) + '</p>'; } }
       else el.innerHTML = '<p class="pad">The 3D library did not load. Check that vendor/three.min.js is present.</p>';
     }, 0);
     return `<div class="head"><h1>${esc(g.name)}</h1><a class="btn warn" href="#games">Leave game</a></div><div id="stage" class="stage"></div>
@@ -194,6 +205,25 @@
   };
   V.user = V.profile;
 
+  /* ---------- avatar editor ---------- */
+  const PALETTE = ['#f2f2ee', '#c9ccd1', '#9aa3ad', '#3a3f4b', '#111522', '#d9342b', '#e07b1a', '#f5b800', '#f5d76e', '#c9a27a', '#8a5a2b', '#2fa84f', '#3a5f3a', '#7fe3ff', '#2b6fd9', '#1d2b4f', '#8a4fd1', '#e86aa6'];
+  // Sample mode keeps the look in this browser. Live mode (js/live.js) replaces these three functions with server calls.
+  const Look = {
+    get: () => ({ c: (D.users[ME].c || []).slice(0, 3), hat: D.users[ME].hat || '' }),
+    set: look => { st.look = look; Object.assign(D.users[ME], look); },
+    locked: shape => (st.inv.some(e => item(e[0]).shape === shape) ? '' : 'Buy it in the catalog to wear it')
+  };
+  if (st.look && Array.isArray(st.look.c) && st.look.c.length === 3 && st.look.c.every(c => /^#[0-9a-f]{6}$/i.test(c))) Object.assign(D.users[ME], { c: st.look.c, hat: HATS[st.look.hat] ? st.look.hat : '' });
+
+  V.avatar = () => {
+    const l = App.look.get(), parts = ['Head', 'Torso', 'Legs'];
+    const hats = [{ shape: '', name: 'No hat' }].concat(D.items.filter(i => i.type === 'Hat' && HATS[i.shape]));
+    return `<div class="head"><h1>Avatar</h1><span class="muted">This is how you look on the site and in every game.</span></div>
+    <div class="cols2" style="grid-template-columns:260px 1fr"><div>${panel(esc(ME), `<div class="pad">${avatar(ME, 236, l).replace('width="236" height="236"', 'style="width:100%;height:auto"')}<div class="tools"><a class="btn play" href="#play-sandbox">Try it in a game</a></div></div>`)}</div>
+    <div>${parts.map((p, i) => panel(p + ' colour', `<div class="pad swatches">${PALETTE.map(c => `<button class="swatch${l.c[i] === c ? ' on' : ''}" style="background:${c}" data-act="look" data-part="${i}" data-v="${c}" aria-label="${p} colour ${c}"></button>`).join('')}<label class="check">Custom <input type="color" id="look-${i}" value="${/^#[0-9a-f]{6}$/i.test(l.c[i]) ? l.c[i] : '#888888'}" data-change="look" data-part="${i}"></label></div>`)).join('')}
+    ${panel('Hat', `<div class="pad inv">${hats.map(h => { const why = h.shape ? App.look.locked(h.shape) : '', on = l.hat === h.shape; return `<button class="slot${on ? ' on' : ''}" data-act="look" data-hat="${h.shape}" ${why ? 'disabled' : ''} title="${esc(why)}">${avatar(h.name, 80, { c: l.c, hat: h.shape }).replace('class="av"', 'class="av" style="width:100%;height:auto"')}<span>${esc(h.name)}</span><span class="muted">${why ? 'Locked' : on ? 'Wearing' : 'Wear'}</span></button>`; }).join('')}</div><div class="pad small muted" style="padding-top:0">${esc(App.look.note || 'Locked hats are catalog items you do not own yet.')}</div>`)}</div></div>`;
+  };
+
   /* ---------- router ---------- */
   const NAV = { thread: 'forum', group: 'groups', item: 'catalog', play: 'games' };
   let seq = 0;
@@ -232,6 +262,7 @@
       }
       tr.give = [];
     },
+    look: el => { const l = App.look.get(); if (el.dataset.hat !== undefined) l.hat = el.dataset.hat; else l.c[+el.dataset.part] = el.dataset.v || el.value; return Promise.resolve(App.look.set(l)).then(() => { toast('Avatar updated.'); }); },
     pick: el => { const l = tr[el.dataset.side], k = +el.dataset.k, at = l.indexOf(k); if (at < 0) l.push(k); else l.splice(at, 1); },
     send: () => {
       st.trades.unshift({ dir: 'Outbound', with: tr.partner, give: tr.give.map(k => st.inv[k]), get: tr.get.map(k => invOf(tr.partner)[k]), status: 'Pending', t: now() });
@@ -261,7 +292,7 @@
   });
   main.addEventListener('submit', e => { e.preventDefault(); const f = e.target; if (F[f.dataset.form]) run(() => F[f.dataset.form](f)); });
 
-  const App = window.KBApp = { D, V, A, F, NAV, st, render, run, esc, fmt, avatar, emblem, panel, toast, ulink, me: () => ME, setMe: n => { ME = n; D.me = n; } };
+  const App = window.KBApp = { look: Look, D, V, A, F, NAV, st, render, run, esc, fmt, avatar, emblem, panel, toast, ulink, me: () => ME, setMe: n => { ME = n; D.me = n; } };
   // Live mode (js/live.js) checks for the API and replaces the community views. Without an API the sample data stays.
   (window.KBLive ? window.KBLive.boot(App) : Promise.resolve()).then(render, render);
 })();
